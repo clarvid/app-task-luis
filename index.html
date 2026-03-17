@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>App de Tareas</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="left">
+      <div class="name-block">
+        <span id="username" contenteditable="true" title="Haz clic para editar">Mi nombre</span>
+        <div id="datetime" class="datetime"></div>
+      </div>
+    </div>
+    <div class="right">
+      <button id="themeToggle" class="theme-toggle" aria-label="Cambiar tema">
+        <span class="toggle-track">
+          <span class="toggle-thumb" id="themeIcon">☀️</span>
+        </span>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-area">
+    <div class="top-controls">
+      <div class="filters">
+        <button class="filter-btn active" data-filter="all">Todas</button>
+        <button class="filter-btn" data-filter="not_started">Sin iniciar</button>
+        <button class="filter-btn" data-filter="in_progress">En progreso</button>
+        <button class="filter-btn" data-filter="complete">Completadas</button>
+      </div>
+    </div>
+
+    <section class="tasks-container">
+      <div id="tasksGrid" class="tasks-grid"></div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div class="progress-info"><span id="completedCount">0</span>/<span id="totalCount">0</span></div>
+    <div class="progress-bar-wrap"><div id="progressBar" class="progress-bar"></div></div>
+  </footer>
+
+  <button id="fabPomodoro" class="fab fab-pomodoro" aria-label="Pomodoro">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+  </button>
+  <button id="fab" class="fab" aria-label="Agregar tarea">+</button>
+
+  <!-- Modal crear tarea -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <button class="modal-close" id="cancelBtn" aria-label="Cerrar">&times;</button>
+      <h3 id="modalTitle">Crear tarea</h3>
+      <form id="taskForm">
+
+        <div class="form-field">
+          <label class="form-label">Título</label>
+          <input class="line-input" type="text" id="taskTitle" required autocomplete="off">
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Descripción</label>
+          <textarea class="line-input no-resize" id="taskDesc" rows="3"></textarea>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Subtareas</label>
+          <button type="button" id="addSubtaskBtn" class="btn-add-subtask">+ Añadir subtarea</button>
+          <div id="subtasksList" class="subtasks-list"></div>
+        </div>
+
+        <div class="form-field form-row">
+          <div class="form-col">
+            <label class="form-label">Fecha límite</label>
+            <input class="line-input" type="date" id="taskDue">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Duración (hrs)</label>
+            <input class="line-input" type="number" id="taskDur" min="0" placeholder="0">
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Estado</label>
+          <div class="status-selector" id="statusSelector">
+            <button type="button" class="status-opt" data-val="not_started">Sin iniciar</button>
+            <button type="button" class="status-opt" data-val="in_progress">En progreso</button>
+            <button type="button" class="status-opt" data-val="complete">Completa</button>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Color</label>
+          <div id="colorChoices" class="color-choices">
+            <button type="button" class="color choice" data-color="#ffffff" style="background:#ffffff"></button>
+            <button type="button" class="color choice" data-color="#ffd8cc" style="background:#ffd8cc"></button>
+            <button type="button" class="color choice" data-color="#d0f0c0" style="background:#d0f0c0"></button>
+            <button type="button" class="color choice" data-color="#cfe7ff" style="background:#cfe7ff"></button>
+            <button type="button" class="color choice" data-color="#f7d6ff" style="background:#f7d6ff"></button>
+            <button type="button" class="color choice" data-color="#fff2b5" style="background:#fff2b5"></button>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn-primary">Guardar</button>
+          <button type="button" class="btn-secondary" id="cancelBtn2">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal detalle tarea -->
+  <div id="detailModal" class="modal hidden">
+    <div class="modal-content">
+      <button id="closeDetail" class="modal-close">&times;</button>
+      <div id="detailBody"></div>
+    </div>
+  </div>
+
+  <!-- Modal confirmación eliminar -->
+  <div id="confirmModal" class="modal hidden">
+    <div class="modal-content confirm-modal">
+      <div class="confirm-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </div>
+      <h3 class="confirm-title">Eliminar tarea</h3>
+      <p class="confirm-msg" id="confirmMsg"></p>
+      <div class="confirm-actions">
+        <button class="btn-danger" id="confirmDeleteBtn">Sí, eliminar</button>
+        <button class="btn-secondary" id="confirmCancelBtn">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Pomodoro -->
+  <div id="pomodoroModal" class="modal hidden">
+    <div class="modal-content pomo-modal">
+      <button class="modal-close" id="closePomodoroModal">&times;</button>
+      <h3>Pomodoro</h3>
+      <div class="pomo-mode-toggle">
+        <button class="pomo-mode-btn sel" data-mode="focus">⚡ Enfoque</button>
+        <button class="pomo-mode-btn" data-mode="rest">☕ Descanso</button>
+      </div>
+      <div class="pomo-time-wrap">
+        <input class="pomo-time-input" id="pomodoroTime" value="25:00" maxlength="5">
+      </div>
+      <div class="pomo-label" id="pomodoroLabel">Tiempo de enfoque</div>
+      <div class="pomo-actions">
+        <button class="btn-primary" id="pomodoroStart">Comenzar</button>
+        <button class="btn-secondary" id="pomodoroReset">Reiniciar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Widget Pomodoro flotante -->
+  <div id="pomodoroWidget" class="pomo-widget hidden">
+    <span id="widgetTime">25:00</span>
+    <button id="widgetReset" class="widget-btn" title="Reiniciar">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+    </button>
+    <button id="widgetExpand" class="widget-btn" title="Expandir">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+    </button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
