@@ -30,6 +30,12 @@
         <button class="filter-btn" data-filter="not_started">Sin iniciar</button>
         <button class="filter-btn" data-filter="in_progress">En progreso</button>
         <button class="filter-btn" data-filter="complete">Completadas</button>
+        <select class="filter-select" id="priorityFilter">
+          <option value="all">Prioridad: Todas</option>
+          <option value="low">🟢 Baja</option>
+          <option value="medium">🟡 Media</option>
+          <option value="high">🔴 Alta</option>
+        </select>
       </div>
     </div>
 
@@ -62,7 +68,7 @@
 
         <div class="form-field">
           <label class="form-label">Descripción</label>
-          <textarea class="line-input no-resize" id="taskDesc" rows="3"></textarea>
+          <textarea class="line-input no-resize" id="taskDesc" rows="2"></textarea>
         </div>
 
         <div class="form-field">
@@ -82,24 +88,34 @@
           </div>
         </div>
 
-        <div class="form-field">
-          <label class="form-label">Estado</label>
-          <div class="status-selector" id="statusSelector">
-            <button type="button" class="status-opt" data-val="not_started">Sin iniciar</button>
-            <button type="button" class="status-opt" data-val="in_progress">En progreso</button>
-            <button type="button" class="status-opt" data-val="complete">Completa</button>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Estado</label>
+            <select class="line-select" id="statusSelect">
+              <option value="not_started">Sin iniciar</option>
+              <option value="in_progress">En progreso</option>
+              <option value="complete">Completa</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Prioridad</label>
+            <select class="line-select" id="prioritySelect">
+              <option value="low">🟢 Baja</option>
+              <option value="medium">🟡 Media</option>
+              <option value="high">🔴 Alta</option>
+            </select>
           </div>
         </div>
 
         <div class="form-field">
-          <label class="form-label">Color</label>
+          <label class="form-label">Color de tarjeta</label>
           <div id="colorChoices" class="color-choices">
-            <button type="button" class="color choice" data-color="#ffffff" style="background:#ffffff"></button>
-            <button type="button" class="color choice" data-color="#ffd8cc" style="background:#ffd8cc"></button>
-            <button type="button" class="color choice" data-color="#d0f0c0" style="background:#d0f0c0"></button>
-            <button type="button" class="color choice" data-color="#cfe7ff" style="background:#cfe7ff"></button>
-            <button type="button" class="color choice" data-color="#f7d6ff" style="background:#f7d6ff"></button>
-            <button type="button" class="color choice" data-color="#fff2b5" style="background:#fff2b5"></button>
+            <button type="button" class="color choice" data-color="#ffffff" style="background:#ffffff" title="Blanco"></button>
+            <button type="button" class="color choice" data-color="#ffd8cc" style="background:#ffd8cc" title="Salmón"></button>
+            <button type="button" class="color choice" data-color="#fff2b5" style="background:#fff2b5" title="Amarillo"></button>
+            <button type="button" class="color choice" data-color="#d0f0c0" style="background:#d0f0c0" title="Verde"></button>
+            <button type="button" class="color choice" data-color="#cfe7ff" style="background:#cfe7ff" title="Azul"></button>
+            <button type="button" class="color choice" data-color="#f7d6ff" style="background:#f7d6ff" title="Lavanda"></button>
           </div>
         </div>
 
