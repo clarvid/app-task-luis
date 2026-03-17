@@ -4,11 +4,11 @@ const qs  = s => document.querySelector(s);
 const qsa = s => Array.from(document.querySelectorAll(s));
 
 // ── State ──
-let tasks          = [];
-let currentFilter  = 'all';
-let selectedColor  = '#ffffff';
-let selectedStatus = 'not_started';
-let editingTaskId  = null;
+let tasks            = [];
+let currentFilter    = 'all';
+let currentPriority  = 'all';
+let selectedColor    = '#ffffff';
+let editingTaskId    = null;
 
 // ── DOM refs ──
 const usernameEl      = qs('#username');
@@ -31,6 +31,9 @@ const progressBar     = qs('#progressBar');
 const detailModal     = qs('#detailModal');
 const detailBody      = qs('#detailBody');
 const modalTitle      = qs('#modalTitle');
+const statusSelect    = qs('#statusSelect');
+const prioritySelect  = qs('#prioritySelect');
+const priorityFilter  = qs('#priorityFilter');
 
 // ── SVG trash icon ──
 const trashSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
@@ -78,14 +81,6 @@ themeToggle.addEventListener('click', () => {
   applyTheme(isDark);
 });
 
-// ── Status selector (form) ──
-const statusOpts = qsa('#statusSelector .status-opt');
-function setStatus(val) {
-  selectedStatus = val;
-  statusOpts.forEach(b => b.classList.toggle('sel', b.dataset.val === val));
-}
-statusOpts.forEach(btn => btn.addEventListener('click', () => setStatus(btn.dataset.val)));
-
 // ── Color choices ──
 colorChoices.addEventListener('click', e => {
   const btn = e.target.closest('.choice');
@@ -122,7 +117,8 @@ function openModal(taskId = null) {
   taskForm.reset();
   subtasksList.innerHTML = '';
   selectColor('#ffffff');
-  setStatus('not_started');
+  statusSelect.value   = 'not_started';
+  prioritySelect.value = 'low';
   modalTitle.textContent = taskId ? 'Editar tarea' : 'Crear tarea';
 
   if (taskId !== null) {
@@ -133,7 +129,8 @@ function openModal(taskId = null) {
     qs('#taskDue').value   = t.due   || '';
     qs('#taskDur').value   = t.dur   || '';
     selectColor(t.color   || '#ffffff');
-    setStatus(t.status    || 'not_started');
+    statusSelect.value   = t.status   || 'not_started';
+    prioritySelect.value = t.priority || 'low';
     (t.subtasks || []).forEach(st => addSubtaskRow(st.title));
   }
   modal.classList.remove('hidden');
@@ -151,12 +148,14 @@ cancelBtn2.addEventListener('click', closeCreateModal);
 // ── Form submit (create / update) ──
 taskForm.addEventListener('submit', e => {
   e.preventDefault();
-  const title = qs('#taskTitle').value.trim();
+  const title    = qs('#taskTitle').value.trim();
   if (!title) return;
-  const desc = qs('#taskDesc').value.trim();
-  const due  = qs('#taskDue').value  || null;
-  const dur  = qs('#taskDur').value  || null;
-  const rawSubs = Array.from(subtasksList.querySelectorAll('.subtask-input'))
+  const desc     = qs('#taskDesc').value.trim();
+  const due      = qs('#taskDue').value  || null;
+  const dur      = qs('#taskDur').value  || null;
+  const status   = statusSelect.value    || 'not_started';
+  const priority = prioritySelect.value  || 'low';
+  const rawSubs  = Array.from(subtasksList.querySelectorAll('.subtask-input'))
     .map(s => s.value.trim()).filter(Boolean);
 
   if (editingTaskId !== null) {
@@ -167,11 +166,11 @@ taskForm.addEventListener('submit', e => {
         const existing = (old.subtasks || []).find(s => s.title === stTitle);
         return existing || { id: Date.now() + Math.random(), title: stTitle, done: false };
       });
-      tasks[idx] = { ...old, title, desc, subtasks, color: selectedColor, due, dur, status: selectedStatus };
+      tasks[idx] = { ...old, title, desc, subtasks, color: selectedColor, due, dur, status, priority };
     }
   } else {
     const subtasks = rawSubs.map(stTitle => ({ id: Date.now() + Math.random(), title: stTitle, done: false }));
-    tasks.unshift({ id: Date.now() + Math.random(), title, desc, subtasks, color: selectedColor, due, dur, status: selectedStatus, created: Date.now() });
+    tasks.unshift({ id: Date.now() + Math.random(), title, desc, subtasks, color: selectedColor, due, dur, status, priority, created: Date.now() });
   }
 
   persist();
@@ -182,7 +181,11 @@ taskForm.addEventListener('submit', e => {
 // ── Render grid ──
 function renderTasks() {
   tasksGrid.innerHTML = '';
-  const filtered = tasks.filter(t => currentFilter === 'all' || t.status === currentFilter);
+  const filtered = tasks.filter(t => {
+    const statusOk   = currentFilter   === 'all' || t.status   === currentFilter;
+    const priorityOk = currentPriority === 'all' || t.priority === currentPriority;
+    return statusOk && priorityOk;
+  });
 
   filtered.forEach(t => {
     const card = document.createElement('div');
@@ -200,6 +203,20 @@ function renderTasks() {
       descEl.textContent = t.desc.length > 70 ? t.desc.slice(0, 70) + '…' : t.desc;
       card.appendChild(descEl);
     }
+
+    // bottom-left dots (status + priority)
+    const dots = document.createElement('div');
+    dots.className = 'task-card-dots';
+    const statusDot = document.createElement('span');
+    statusDot.className = 'card-dot status-' + (t.status || 'not_started');
+    statusDot.title = { not_started: 'Sin iniciar', in_progress: 'En progreso', complete: 'Completa' }[t.status] || '';
+    const prioMap = { low: '🟢 Baja', medium: '🟡 Media', high: '🔴 Alta' };
+    const priorityDot = document.createElement('span');
+    priorityDot.className = 'card-dot priority-' + (t.priority || 'low');
+    priorityDot.title = prioMap[t.priority] || 'Baja';
+    dots.appendChild(statusDot);
+    dots.appendChild(priorityDot);
+    card.appendChild(dots);
 
     if (t.subtasks && t.subtasks.length) {
       const sc = document.createElement('div');
@@ -222,6 +239,10 @@ filterBtns.forEach(b => b.addEventListener('click', () => {
   currentFilter = b.dataset.filter;
   renderTasks();
 }));
+priorityFilter.addEventListener('change', () => {
+  currentPriority = priorityFilter.value;
+  renderTasks();
+});
 
 // ── Footer ──
 function updateFooter() {
@@ -252,13 +273,17 @@ function openDetail(id) {
     detailBody.appendChild(p);
   }
 
-  // ── Due / duration metadata
-  if (t.due || t.dur) {
+  // ── Due / duration / priority metadata
+  {
     const meta = document.createElement('div');
-    meta.style.cssText = 'display:flex;gap:16px;font-size:.82rem;color:var(--muted);margin-top:12px;';
+    meta.style.cssText = 'display:flex;gap:16px;font-size:.82rem;color:var(--muted);margin-top:12px;flex-wrap:wrap;';
     if (t.due) { const s = document.createElement('span'); s.textContent = '📅 ' + t.due; meta.appendChild(s); }
     if (t.dur) { const s = document.createElement('span'); s.textContent = '⏱ ' + t.dur + ' hrs'; meta.appendChild(s); }
-    detailBody.appendChild(meta);
+    const prioLabels = { low: '🟢 Baja', medium: '🟡 Media', high: '🔴 Alta' };
+    const ps = document.createElement('span');
+    ps.textContent = prioLabels[t.priority] || '🟢 Baja';
+    meta.appendChild(ps);
+    if (meta.children.length) detailBody.appendChild(meta);
   }
 
   // ── Status selector
@@ -426,7 +451,7 @@ function load() {
         { id: 11, title: 'Revisar diseño',   done: true  },
         { id: 12, title: 'Añadir funciones', done: false }
       ],
-      color: '#ffd8cc', due: '2026-03-31', dur: '3', status: 'in_progress', created: Date.now()
+      color: '#ffd8cc', due: '2026-03-31', dur: '3', status: 'in_progress', priority: 'medium', created: Date.now()
     }];
     persist();
   }
@@ -479,7 +504,10 @@ function pomStart() {
   pomodoroInterval = setInterval(() => {
     pomodoroRemainingSeconds--;
     pomUpdateDisplay();
-    if (pomodoroRemainingSeconds <= 0) pomStop();
+    if (pomodoroRemainingSeconds <= 0) {
+      pomStop();
+      playPomodoroAlarm();
+    }
   }, 1000);
 }
 function showPomoWidget() {
@@ -527,6 +555,31 @@ pomodoroStartBtn.addEventListener('click', () => {
 pomodoroResetBtn2.addEventListener('click', () => { pomStop(); pomodoroRemainingSeconds = pomodoroTotalSeconds; pomUpdateDisplay(); });
 widgetResetBtn.addEventListener('click',  () => { pomStop(); pomodoroRemainingSeconds = pomodoroTotalSeconds; pomUpdateDisplay(); });
 widgetExpandBtn.addEventListener('click', showPomoModal);
+
+// ── Pomodoro alarm (Web Audio API — no file needed) ──
+function playPomodoroAlarm() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const beeps = [
+      { freq: 880, start: 0,   dur: 0.18 },
+      { freq: 880, start: 0.25, dur: 0.18 },
+      { freq: 1100, start: 0.5, dur: 0.35 },
+    ];
+    beeps.forEach(({ freq, start, dur }) => {
+      const osc   = ctx.createOscillator();
+      const gain  = ctx.createGain();
+      osc.type    = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.45, ctx.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + dur + 0.05);
+    });
+    setTimeout(() => ctx.close(), 2000);
+  } catch (e) { /* AudioContext not available */ }
+}
 
 // ── Drag widget (mouse + touch) ──
 {
