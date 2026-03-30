@@ -197,6 +197,13 @@ function renderTasks() {
     titleEl.textContent = t.title;
     card.appendChild(titleEl);
 
+    // Status text
+    const statusMap = { not_started: 'Sin iniciar', in_progress: 'En progreso', complete: 'Completa' };
+    const statusEl = document.createElement('div');
+    statusEl.className = 'task-status ' + (t.status || 'not_started');
+    statusEl.textContent = statusMap[t.status] || 'Sin iniciar';
+    card.appendChild(statusEl);
+
     if (t.desc) {
       const descEl = document.createElement('div');
       descEl.className = 'task-desc-preview';
